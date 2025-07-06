@@ -1,0 +1,373 @@
+//// --------------------------------------------------------------------------------
+//// EduSphere Connect - Database Schema (DBML)
+////
+//// This schema is designed for visualization in tools like dbdiagram.io.
+//// It reflects the Firestore collection structure of the application.
+//// --------------------------------------------------------------------------------
+
+
+// -- Core User and Profile Tables --
+
+Table users as U {
+  uid string [pk, unique, not null, note: 'Firebase Auth UID']
+  name string [not null]
+  email string [unique, not null]
+  role string [not null, note: '"student", "teacher", or "admin"']
+  studentId string [note: 'FK to students.id, only for students']
+  staffId string [note: 'FK to teachers.id or admins.id, only for staff']
+  collegeId string [note: 'Consolidated ID field']
+  initials string
+  avatarUrl string
+  program string
+  branch string
+  department string
+  year int
+  section string
+  fcmToken string [note: 'Firebase Cloud Messaging token for push notifications']
+  settings object [note: 'e.g., { notifications: { enabled: true } }']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table students as S {
+  id string [pk, unique, not null, note: 'Auto-generated College ID, e.g., ENG24CS0001']
+  user_uid string [ref: > U.uid, unique, not null, note: 'FK to users.uid']
+  collegeId string [unique, not null]
+  name string [not null]
+  email string [unique, not null]
+  program string [not null]
+  branch string [not null]
+  year int [not null]
+  semester int [not null]
+  section string [not null]
+  batch string [not null, note: 'e.g., 2024-2028']
+  dob string [not null]
+  phone string
+  address string
+  avatarUrl string
+  initials string
+  status string [not null, note: 'e.g., "Active", "Pending Approval"']
+  type string [not null, note: '"Day Scholar" or "Hosteler"']
+  emergencyContact object [note: '{ name, phone, address }']
+  hostelId string [note: 'FK to hostels.id']
+  roomNumber string
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table teachers as T {
+  id string [pk, unique, not null, note: 'Auto-generated Staff ID, e.g., TCH24CS0001']
+  user_uid string [ref: > U.uid, unique, not null, note: 'FK to users.uid']
+  staffId string [unique, not null]
+  name string [not null]
+  email string [unique, not null]
+  department string [not null]
+  position string [not null, note: 'e.g., "Assistant Professor"']
+  designation string [note: 'alias for position']
+  status string [not null]
+  avatarUrl string
+  initials string
+  phone string
+  officeLocation string
+  qualifications string
+  specialization string
+  dob string [not null]
+  joinDate timestamp [not null]
+  program string [note: 'Primary program association']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table admins as ADM {
+  id string [pk, unique, not null, note: 'Auto-generated Staff ID, e.g., ADM24AC0001']
+  user_uid string [ref: > U.uid, unique, not null, note: 'FK to users.uid']
+  staffId string [unique, not null]
+  name string [not null]
+  email string [unique, not null]
+  department string [not null]
+  position string [not null, note: 'e.g., "Accounts Officer"']
+  status string [not null]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+// -- Academic Structure Tables --
+
+Table classes as CLS {
+  id string [pk, unique, not null]
+  program string [not null]
+  branch string [not null]
+  year int [not null]
+  semester int [not null]
+  section string [not null]
+  courseId string [ref: > C.id, not null]
+  courseName string [not null]
+  credits int [not null]
+  teacherId string [ref: > T.user_uid, note: 'Auth UID of the teacher']
+  studentUids object [note: 'Array of student auth UIDs. Firestore does not support direct FK array.']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table courses as C {
+  id string [pk, unique, not null, note: 'e.g., CS101']
+  name string [not null]
+  description string
+  program string [not null]
+  branch string [not null]
+  semester int [not null]
+  credits int [not null]
+}
+
+Table materials as MAT {
+  id string [pk, unique, not null]
+  classId string [ref: > CLS.id, not null]
+  courseId string [ref: > C.id, not null]
+  name string [not null]
+  type string [not null, note: '"pdf", "video", "image", "other"']
+  size string
+  url string [not null]
+  uploadDate timestamp [not null]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+// -- Student Academic Records --
+
+Table attendance as ATT {
+  id string [pk, unique, not null, note: 'Composite ID: {classId}_{date}_{period}_{studentId}']
+  classId string [ref: > CLS.id, not null]
+  studentId string [ref: > S.id, not null]
+  teacherId string [ref: > T.user_uid, not null]
+  date timestamp [not null]
+  period int [not null]
+  status string [not null, note: '"Present" or "Absent"']
+  courseCode string
+  program string
+  branch string
+  year int
+  semester int
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table marks as M {
+  id string [pk, unique, not null, note: 'Composite ID: {classId}_{studentId}']
+  classId string [ref: > CLS.id, not null]
+  studentId string [ref: > S.id, not null]
+  courseCode string [not null]
+  courseName string [not null]
+  semester int [not null]
+  credits int
+  internalsMarks int
+  externalsMarks int
+  totalMarks int
+  grade string
+  updatedAt timestamp [not null]
+}
+
+Table backlogs as BKLG {
+  id string [pk, unique, not null, note: 'Composite ID: {studentId}_{courseCode}']
+  studentId string [ref: > S.id, not null]
+  courseCode string [not null]
+  courseName string
+  semesterAttempted int
+  status string [note: '"Active" or "Cleared"']
+  gradeAchieved string
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table exams as EXM {
+  id string [pk, unique, not null]
+  program string [not null]
+  branch string [not null]
+  year int [not null]
+  semester int [not null]
+  courseCode string [not null]
+  courseName string
+  date string [not null]
+  startTime string [not null]
+  endTime string [not null]
+  status string [not null, note: '"Scheduled", "Published", "Cancelled"']
+  credits int
+}
+
+Table hall_tickets as HT {
+  id string [pk, unique, not null, note: 'Composite ID: {studentId}_{semester}']
+  studentId string [ref: > S.id, not null]
+  studentName string [not null]
+  studentPhotoUrl string
+  studentCollegeId string [not null]
+  program string [not null]
+  branch string [not null]
+  year int [not null, note: 'Academic year of the exams']
+  semester int [not null]
+  examSessionName string [not null]
+  instructions string
+  controllerSignaturePlaceholder string
+  generatedDate string
+}
+
+Table hall_ticket_exams as HT_EXM {
+  // This represents the array of exams within a hall ticket
+  id string [pk]
+  hallTicketId string [ref: > HT.id, not null]
+  courseCode string [not null]
+  courseName string [not null]
+  date string [not null]
+  startTime string [not null]
+  endTime string [not null]
+  credits int
+}
+
+
+// -- Financial Tables --
+
+Table fees as F {
+  id string [pk, unique, not null, note: 'Document ID is the studentId']
+  studentId string [ref: > S.id, not null]
+  studentName string
+  program string
+  branch string
+  totalFees float [not null]
+  amountPaid float [not null]
+  balance float [not null]
+  dueDate timestamp
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table payment_history as PH {
+  // This represents an object in the paymentHistory array in fees
+  id string [pk]
+  feeRecordId string [ref: > F.id, not null, note: 'FK to the fees document']
+  amount float [not null]
+  reference string [not null]
+  date timestamp [not null]
+  recordedBy string [note: '"student" or "admin"']
+  status string [note: '"Success", "Pending Confirmation", "Failed"']
+  notes string
+}
+
+
+// -- Hostel Management Tables --
+
+Table hostels as H {
+  id string [pk, unique, not null]
+  name string [not null]
+  type string [note: '"Boys" or "Girls"']
+  status string [note: '"Operational", "Under Maintenance", "Closed"']
+  warden object [note: '{ name, contact, email, office }']
+  amenities array [note: 'Array of strings']
+  rulesHighlight array [note: 'Array of strings']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table hostel_rooms as HR {
+  // This represents an object in the rooms array in hostels
+  id string [pk]
+  hostelId string [ref: > H.id, not null]
+  roomNumber string [not null]
+  capacity int [not null]
+}
+
+Table hostel_room_residents as HRR {
+  // Represents a resident in a room
+  id string [pk]
+  roomId string [ref: > HR.id, not null]
+  studentId string [ref: > S.id, not null]
+  studentName string
+}
+
+Table complaints as CMPL {
+  id string [pk, unique, not null]
+  hostelId string [ref: > H.id, not null]
+  studentId string [ref: > S.id, not null]
+  studentName string
+  roomNumber string
+  issue string [not null]
+  date timestamp [not null]
+  status string [not null, note: '"Pending", "In Progress", "Resolved"']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+
+// -- Placement & Career Tables --
+
+Table opportunities as OPP {
+  id string [pk, unique, not null]
+  type string [not null, note: '"placement" or "internship"']
+  company string [not null]
+  role string [not null]
+  ctc_stipend string
+  location string
+  duration string
+  description string
+  skills array [note: 'Array of strings']
+  eligibility string
+  status string [note: '"Open" or "Closed"']
+  postedAt timestamp [not null]
+  updatedAt timestamp
+}
+
+Table applications as APP {
+  id string [pk, unique, not null, note: 'Composite ID: {studentUid}_{opportunityId}']
+  studentUid string [ref: > U.uid, not null]
+  studentId string [ref: > S.id, not null]
+  opportunityId string [ref: > OPP.id, not null]
+  opportunityType string
+  company string
+  role string
+  status string [not null]
+  appliedAt timestamp [not null]
+  updatedAt timestamp
+}
+
+
+// -- System & Communication Tables --
+
+Table chats as CHT {
+  id string [pk, unique, not null]
+  classId string [ref: > CLS.id, note: 'FK to classes if it is a class chat']
+  name string [not null]
+  description string
+  participantUids array [note: 'Array of user UIDs']
+  createdAt timestamp
+}
+
+Table chat_messages as CHT_MSG {
+  // Represents a message in the subcollection of a chat
+  id string [pk]
+  chatId string [ref: > CHT.id, not null]
+  text string [not null]
+  senderUid string [ref: > U.uid, not null]
+  senderName string
+  senderInitials string
+  senderAvatarUrl string
+  timestamp timestamp
+}
+
+Table notifications as N {
+  id string [pk, unique, not null]
+  recipientUid string [ref: > U.uid, not null]
+  title string [not null]
+  message string [not null]
+  type string [not null, note: '"alert", "task", "info", "event"']
+  link string
+  read boolean
+  timestamp timestamp [not null]
+}
+
+Table login_activities as LA {
+  id string [pk, unique, not null]
+  userId string [ref: > U.uid, not null]
+  timestamp timestamp [not null]
+}
+
+Table counters as CNT {
+  id string [pk, unique, not null, note: 'e.g., "student_ENG24CS", "staff_TCH24CS"']
+  current int [not null, note: 'The last used sequence number']
+}

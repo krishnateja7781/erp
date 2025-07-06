@@ -1,0 +1,348 @@
+
+//// --------------------------------------------------------------------------------
+//// DBML (Database Markup Language) Schema for EduSphere Connect
+////
+//// You can copy this code and paste it into the editor at https://dbdiagram.io
+//// to visualize the database relationships.
+//// --------------------------------------------------------------------------------
+
+Project EduSphere_Connect {
+  database_type: 'Firestore'
+  Note: 'This schema represents the Firestore data structure for the EduSphere Connect application.'
+}
+
+// --- Core User and Profile Collections ---
+
+Table users as "Users (Authentication)" {
+  uid string [pk, note: 'Firebase Auth UID']
+  name string
+  email string [unique]
+  role string [note: '"student", "teacher", or "admin"']
+  initials string
+  avatarUrl string
+  fcmToken string [note: 'Firebase Cloud Messaging token for push notifications']
+  collegeId string [note: 'Holds the student ID. Null for staff.']
+  staffId string [note: 'Holds the staff ID. Null for students.']
+  program string
+  branch string
+  department string
+  year int
+  section string
+  createdAt timestamp
+  updatedAt timestamp
+  settings object [note: 'e.g., { notifications: { enabled: true } }']
+}
+
+Table students as "Students (Profiles)" {
+  collegeId string [pk, note: 'The unique college-issued ID, e.g., ENG24CS0001. This is the Firestore document ID.']
+  user_uid string [unique, ref: > users.uid]
+  name string
+  email string
+  program string
+  branch string
+  year int
+  semester int
+  section string
+  batch string [note: 'e.g., 2024-2028']
+  dob string
+  phone string
+  address string
+  avatarUrl string
+  initials string
+  status string [note: '"Active", "Inactive", "Graduated", etc.']
+  type string [note: '"Day Scholar" or "Hosteler"']
+  hostelId string [ref: > hostels.id]
+  roomNumber string
+  emergencyContact object [note: '{ name, phone, address }']
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table teachers as "Teachers (Profiles)" {
+  staffId string [pk, note: 'The unique college-issued ID, e.g., TCH24CS0001. This is the Firestore document ID.']
+  user_uid string [unique, ref: > users.uid]
+  name string
+  email string
+  department string
+  position string
+  designation string
+  status string
+  avatarUrl string
+  initials string
+  phone string
+  officeLocation string
+  qualifications string
+  specialization string
+  dob string
+  joinDate timestamp
+  program string
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table admins as "Admins (Profiles)" {
+  staffId string [pk, note: 'The unique college-issued ID, e.g., ADM24AD0001. This is the Firestore document ID.']
+  user_uid string [unique, ref: > users.uid]
+  name string
+  email string
+  department string
+  position string
+  // ... other fields similar to teachers
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+// --- Academic Structure ---
+
+Table CoursesCatalogue as "Courses (Catalogue)" {
+  docId string [pk, note: 'Auto-generated Firestore document ID']
+  courseId string [note: 'Human-readable ID, e.g., CS101. Auto-generated.']
+  courseName string
+  program string
+  branch string
+  semester int
+  credits int
+  createdAt timestamp
+  updatedAt timestamp
+  
+  Note: 'This is the master list of all courses the institution can offer.'
+}
+
+Table classes as "Classes (Instances)" {
+  docId string [pk, note: 'Auto-generated Firestore document ID']
+  program string
+  branch string
+  year int
+  semester int
+  section string
+  courseId string [note: 'Refers to a course in the CoursesCatalogue, e.g., CS101']
+  courseName string
+  credits int
+  teacherId string [ref: > users.uid, note: 'The auth UID of the assigned teacher']
+  studentUids array [note: 'Array of student auth UIDs enrolled in this class']
+  createdAt timestamp
+  updatedAt timestamp
+
+  Note: 'A "class" is a specific instance of a course from the catalogue being taught to a specific group of students by a specific teacher.'
+}
+
+
+// --- Academic Records ---
+
+Table attendance {
+  docId string [pk, note: 'Composite ID: {classId}_{date}_{period}_{studentId}']
+  classId string [ref: > classes.docId]
+  teacherId string [ref: > users.uid]
+  studentId string [ref: > students.collegeId]
+  date timestamp
+  period int
+  status string [note: '"Present" or "Absent"']
+  program string
+  branch string
+  year int
+  semester int
+  courseCode string
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table marks {
+  docId string [pk, note: 'Composite ID: {classId}_{studentId}']
+  classId string [ref: > classes.docId]
+  studentId string [ref: > students.collegeId]
+  courseCode string
+  courseName string
+  semester int
+  credits int
+  internalsMarks int
+  externalsMarks int
+  totalMarks int
+  grade string [note: 'e.g., O, A+, A, B+, B, FAIL']
+  updatedAt timestamp
+}
+
+Table backlogs {
+  docId string [pk, note: 'Composite ID: {studentId}_{courseCode}']
+  studentId string [ref: > students.collegeId]
+  courseCode string
+  courseName string
+  semesterAttempted int
+  status string [note: '"Active" or "Cleared"']
+  gradeAchieved string
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+
+// --- Financials ---
+
+Table fees {
+  studentId string [pk, ref: > students.collegeId]
+  studentName string
+  program string
+  branch string
+  totalFees float
+  amountPaid float
+  balance float
+  dueDate timestamp
+  paymentHistory array [note: 'Array of objects: { amount, reference, date, recordedBy, status, notes }']
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+// --- Examinations ---
+
+Table exams {
+  docId string [pk, note: 'Auto-generated Firestore document ID']
+  program string
+  branch string
+  year int
+  semester int
+  courseCode string
+  courseName string
+  date string
+  startTime string
+  endTime string
+  status string [note: '"Scheduled", "Published", "Cancelled"']
+  credits int
+}
+
+Table hallTickets {
+  docId string [pk, note: 'Composite ID: {studentId}_{semester}']
+  studentId string [ref: > students.collegeId]
+  studentName string
+  studentPhotoUrl string
+  studentCollegeId string
+  program string
+  branch string
+  year int
+  semester int
+  examSessionName string
+  exams array [note: 'Array of HallTicketExam objects']
+  instructions string
+  controllerSignaturePlaceholder string
+  generatedDate string
+}
+
+
+// --- Communication & Engagement ---
+
+Table chats {
+  docId string [pk, note: 'Same as classId for class-based chats']
+  name string
+  description string
+  participantUids array [note: 'Array of user UIDs']
+  classId string [ref: > classes.docId]
+  createdAt timestamp
+}
+
+Table messages as "Chat Messages (Sub-collection)" {
+  docId string [pk, note: 'Auto-generated Firestore document ID']
+  parent_chat_id string [ref: > chats.docId]
+  text string
+  senderUid string [ref: > users.uid]
+  senderName string
+  senderInitials string
+  senderAvatarUrl string
+  timestamp timestamp
+
+  Note: 'This is a sub-collection of the `chats` collection.'
+}
+
+Table notifications {
+  docId string [pk, note: 'Auto-generated Firestore document ID']
+  recipientUid string [ref: > users.uid]
+  title string
+  message string
+  type string [note: '"alert", "task", "info", "event"']
+  link string
+  read boolean
+  timestamp timestamp
+}
+
+
+// --- Placements & Internships ---
+
+Table placements as "Placement Opportunities" {
+  docId string [pk, note: 'Auto-generated Firestore document ID']
+  type string [note: '"placement" or "internship"']
+  company string
+  role string
+  ctc_stipend string
+  location string [note: 'Null for internships']
+  duration string [note: 'Null for placements']
+  description string
+  skills array
+  eligibility string
+  status string [note: '"Open" or "Closed"']
+  postedAt timestamp
+  updatedAt timestamp
+}
+
+Table applications as "Job/Internship Applications" {
+  docId string [pk, note: 'Composite ID: {studentUid}_{opportunityId}']
+  studentUid string [ref: > users.uid]
+  studentId string [ref: > students.collegeId]
+  opportunityId string [ref: > placements.docId]
+  opportunityType string [note: '"placement" or "internship"']
+  company string
+  role string
+  status string [note: '"Applied", "Under Review", "Shortlisted", etc.']
+  appliedAt timestamp
+  updatedAt timestamp
+}
+
+
+// --- Miscellaneous ---
+
+Table materials as "Course Materials" {
+  docId string [pk, note: 'Auto-generated Firestore document ID']
+  classId string [ref: > classes.docId]
+  courseId string
+  name string
+  type string [note: '"pdf", "video", "image", "other"']
+  size string
+  uploadDate timestamp
+  url string
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table hostels {
+  id string [pk, note: 'Auto-generated Firestore document ID']
+  name string
+  type string [note: '"Boys" or "Girls"']
+  status string [note: '"Operational", "Under Maintenance", "Closed"']
+  warden object [note: '{ name, contact, email, office }']
+  amenities array
+  rulesHighlight array
+  rooms array [note: 'Array of { roomNumber, capacity, residents: [{ studentId, studentName }] }']
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table complaints {
+  id string [pk, note: 'Auto-generated Firestore document ID']
+  hostelId string [ref: > hostels.id]
+  studentId string [ref: > students.collegeId]
+  studentName string
+  roomNumber string
+  issue string
+  date timestamp
+  status string [note: '"Pending", "In Progress", "Resolved"']
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table counters {
+  docId string [pk, note: 'e.g., "student_ENG24CS", "staff_TCH24CS", "course_CS1"']
+  current int [note: 'The last used sequence number for this prefix']
+}
+
+Table loginActivities {
+  docId string [pk, note: 'Auto-generated Firestore document ID']
+  userId string [ref: > users.uid]
+  timestamp timestamp
+}
+
+    

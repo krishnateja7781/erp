@@ -1,0 +1,322 @@
+
+Project "EduSphere ERP" {
+  database_type: 'Firestore'
+  Note: 'Schema for the EduSphere Educational ERP System.'
+}
+
+// --- Core Entities ---
+
+Table users {
+  uid string [pk, unique, note: 'Firebase Auth UID']
+  name string
+  email string [unique]
+  role string [note: '"student", "teacher", or "admin"']
+  studentId string [note: 'FK to students.id - only for student role']
+  staffId string [note: 'FK to teachers.id or admins.id - for staff roles']
+  initials string
+  avatarUrl string
+  fcmToken string [note: 'Firebase Cloud Messaging token for push notifications']
+  createdAt timestamp
+  updatedAt timestamp
+  settings object
+}
+
+Table students {
+  id string [pk, unique, note: 'College-assigned Student ID']
+  user_uid string [ref: > users.uid, note: 'Links to the auth user']
+  name string
+  email string
+  program string
+  branch string
+  year integer
+  semester integer
+  section string
+  batch string
+  dob string
+  phone string
+  address string
+  avatarUrl string
+  initials string
+  status string
+  type string [note: '"Day Scholar" or "Hosteler"']
+  emergencyContact object
+  hostelId string [note: 'FK to hostels.id']
+  roomNumber string [note: 'References a room within the hostel']
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table teachers {
+  id string [pk, unique, note: 'College-assigned Staff ID']
+  user_uid string [ref: > users.uid, note: 'Links to the auth user']
+  name string
+  email string
+  department string
+  position string
+  status string
+  avatarUrl string
+  initials string
+  phone string
+  officeLocation string
+  qualifications string
+  specialization string
+  dob string
+  joinDate timestamp
+  program string
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table admins {
+  id string [pk, unique, note: 'College-assigned Staff ID']
+  user_uid string [ref: > users.uid, note: 'Links to the auth user']
+  name string
+  email string
+  position string
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+// --- Academic Management ---
+
+Table classes {
+  id string [pk, unique, note: 'Auto-generated document ID']
+  courseId string
+  courseName string
+  program string
+  branch string
+  year integer
+  semester integer
+  section string
+  credits integer
+  teacherId string [ref: > users.uid, note: 'Teacher\'s auth UID']
+  studentUids string[] [note: 'Array of student auth UIDs']
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table attendance {
+  id string [pk, note: 'Composite ID: {classId}_{date}_{period}_{studentId}']
+  classId string [ref: > classes.id]
+  teacherId string [ref: > users.uid]
+  studentId string [ref: > students.id]
+  date timestamp
+  period integer
+  status string [note: '"Present" or "Absent"']
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table marks {
+  id string [pk, note: 'Composite ID: {classId}_{studentId}']
+  classId string [ref: > classes.id]
+  studentId string [ref: > students.id]
+  internalsMarks integer
+  externalsMarks integer
+  totalMarks integer
+  grade string
+  courseCode string
+  semester integer
+  credits integer
+  updatedAt timestamp
+}
+
+Table backlogs {
+  id string [pk, note: 'Composite ID: {studentId}_{courseCode}']
+  studentId string [ref: > students.id]
+  courseCode string
+  courseName string
+  semesterAttempted integer
+  status string [note: '"Active" or "Cleared"']
+  gradeAchieved string
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table materials {
+  id string [pk, note: 'Auto-generated document ID']
+  classId string [ref: > classes.id]
+  courseId string
+  name string
+  type string [note: '"pdf", "video", "image", "other"']
+  size string
+  uploadDate timestamp
+  url string
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+
+// --- Examinations ---
+
+Table exams {
+  id string [pk, note: 'Auto-generated document ID']
+  program string
+  branch string
+  year integer
+  semester integer
+  courseCode string
+  courseName string
+  date string
+  startTime string
+  endTime string
+  status string [note: '"Scheduled", "Published", "Cancelled"']
+  credits integer
+}
+
+Table hallTickets {
+  id string [pk, note: 'Composite ID: {studentId}_{semester}']
+  studentId string [ref: > students.id]
+  studentName string
+  studentPhotoUrl string
+  studentCollegeId string
+  program string
+  branch string
+  year integer
+  semester integer
+  examSessionName string
+  exams object[] [note: 'Array of HallTicketExam objects']
+  instructions string
+  controllerSignaturePlaceholder string
+  generatedDate string
+}
+
+// --- Financials ---
+
+Table fees {
+  id string [pk, note: 'Document ID is the studentId']
+  studentId string [ref: > students.id]
+  studentName string
+  totalFees number
+  amountPaid number
+  dueDate timestamp
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table fee_payment_history {
+  id string [pk, note: 'Virtual table for payments array in fees collection']
+  fee_id string [ref: > fees.id]
+  amount number
+  reference string
+  date timestamp
+  recordedBy string
+  status string
+  notes string
+}
+
+// --- Career Services ---
+
+Table placements {
+  id string [pk, note: 'Auto-generated document ID']
+  type string [note: '"placement" or "internship"']
+  company string
+  role string
+  ctc_stipend string
+  location string
+  duration string
+  description string
+  skills string[]
+  eligibility string
+  status string [note: '"Open" or "Closed"']
+  postedAt timestamp
+  updatedAt timestamp
+}
+
+Table applications {
+  id string [pk, note: 'Composite ID: {studentUid}_{opportunityId}']
+  studentUid string [ref: > users.uid]
+  studentId string [ref: > students.id]
+  opportunityId string [ref: > placements.id]
+  opportunityType string
+  company string
+  role string
+  status string
+  appliedAt timestamp
+  updatedAt timestamp
+}
+
+
+// --- Residential Life ---
+
+Table hostels {
+  id string [pk, note: 'Auto-generated document ID']
+  name string
+  type string
+  status string
+  warden object
+  amenities string[]
+  rulesHighlight string[]
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+Table hostel_rooms {
+  id string [pk, note: 'Virtual table for rooms array in hostels collection']
+  hostel_id string [ref: > hostels.id]
+  roomNumber string
+  capacity integer
+}
+
+Table room_residents {
+  id string [pk, note: 'Virtual table for residents array in rooms']
+  room_id string [ref: > hostel_rooms.id]
+  studentId string [ref: > students.id]
+  studentName string
+}
+
+Table complaints {
+  id string [pk, note: 'Auto-generated document ID']
+  hostelId string [ref: > hostels.id]
+  studentId string [ref: > students.id]
+  roomNumber string
+  issue string
+  date timestamp
+  status string
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+// --- Communication & Utilities ---
+
+Table chats {
+  id string [pk, note: 'Document ID, often same as classId']
+  name string
+  description string
+  participantUids string[] [note: 'Array of user UIDs']
+  classId string [ref: > classes.id]
+  createdAt timestamp
+}
+
+Table chat_messages {
+  id string [pk, note: 'Auto-generated document ID']
+  chat_id string [ref: > chats.id]
+  text string
+  senderUid string [ref: > users.uid]
+  senderName string
+  senderInitials string
+  senderAvatarUrl string
+  timestamp timestamp
+}
+
+Table notifications {
+  id string [pk, note: 'Auto-generated document ID']
+  recipientUid string [ref: > users.uid]
+  title string
+  message string
+  type string
+  link string
+  read boolean
+  timestamp timestamp
+}
+
+Table counters {
+  id string [pk, note: 'e.g., "student_ENG24CS" or "staff_TCH24CS"']
+  current integer
+}
+
+Table loginActivities {
+  id string [pk, note: 'Auto-generated document ID']
+  userId string [ref: > users.uid]
+  timestamp timestamp
+}

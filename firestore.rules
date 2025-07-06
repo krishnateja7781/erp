@@ -1,0 +1,160 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // --- Helper Functions ---
+    function isAuth() {
+      return request.auth != null;
+    }
+    function isRole(role) {
+      return isAuth() && request.auth.token.role == role;
+    }
+    function isAdmin() {
+      return isRole('admin');
+    }
+    function isTeacher() {
+      return isRole('teacher');
+    }
+    function isStudent() {
+      return isRole('student');
+    }
+    function isOwner(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+    function isProfileOwner(profileId) {
+        return isAuth() && request.auth.token.student_doc_id == profileId || request.auth.token.staff_doc_id == profileId;
+    }
+
+    // --- User Profiles ---
+    match /users/{userId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.uid == userId;
+      allow update: if isOwner(userId) || isAdmin();
+    }
+
+    // --- Students ---
+    match /students/{studentId} {
+      allow read: if isProfileOwner(studentId) || isAdmin() || isTeacher(); // Teachers can read student profiles
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // --- Staff (Teachers/Admins) ---
+    match /teachers/{teacherId} {
+        allow read: if isAuth();
+        allow create: if isAdmin();
+        allow update: if isAdmin();
+        allow delete: if isAdmin();
+    }
+    match /admins/{adminId} {
+        allow read: if isAuth();
+        allow create: if isAdmin();
+        allow update: if isAdmin();
+        allow delete: if isAdmin();
+    }
+    
+    // --- Courses & Classes ---
+    match /courses/{courseId} {
+        allow read: if isAuth();
+        allow create, update, delete: if isAdmin();
+    }
+    match /classes/{classId} {
+        allow read: if isAuth();
+        allow create, update, delete: if isAdmin();
+    }
+    
+    // --- Attendance ---
+    match /attendance/{attendanceId} {
+        allow read: if isAuth();
+        allow create, update: if isTeacher() || isAdmin();
+    }
+    
+    // --- Marks ---
+    match /marks/{markId} {
+        allow read: if isAuth();
+        allow create, update: if isTeacher() || isAdmin();
+    }
+    match /backlogs/{backlogId} {
+        allow read: if isAuth();
+        allow create, update, delete: if isTeacher() || isAdmin();
+    }
+
+    // --- Fees ---
+    match /fees/{studentId} {
+        allow read: if isProfileOwner(studentId) || isAdmin();
+        allow create: if isAdmin(); // Only admins can create the initial fee doc
+        allow update: if isAuth(); // Student can submit payment, admin can confirm
+    }
+    
+    // --- Notifications ---
+    match /notifications/{notificationId} {
+        allow read, update: if isOwner(resource.data.recipientUid);
+        allow create: if isAuth(); // Server-side actions are authenticated
+        allow delete: if isOwner(resource.data.recipientUid);
+    }
+    
+    // --- Placements & Internships ---
+    match /placements/{opportunityId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
+    }
+    match /applications/{applicationId} {
+      allow read: if isAdmin() || isOwner(resource.data.studentUid);
+      allow create: if isStudent() && isOwner(request.resource.data.studentUid);
+      allow update: if isAdmin();
+    }
+    
+    // --- Study Materials ---
+    match /materials/{materialId} {
+        allow read: if isAuth();
+        allow create, update, delete: if isTeacher() || isAdmin();
+    }
+    
+    // --- Exams & Hall Tickets ---
+    match /exams/{examId} {
+        allow read: if isAuth();
+        allow create, update, delete: if isAdmin();
+    }
+    match /hallTickets/{hallTicketId} {
+        allow read: if isAuth();
+        allow create, update, delete: if isAdmin();
+    }
+    
+    // --- Hostels & Complaints ---
+    match /hostels/{hostelId} {
+        allow read: if isAuth();
+        allow create, update, delete: if isAdmin();
+    }
+    match /complaints/{complaintId} {
+        allow read: if isAdmin() || isOwner(resource.data.studentId);
+        allow create: if isStudent() && isOwner(request.resource.data.studentId);
+        allow update: if isAdmin();
+    }
+    
+    // --- Chat System ---
+    match /chats/{chatId} {
+        allow read: if isAdmin() || request.auth.uid in resource.data.participantUids;
+        allow create, update: if isAdmin(); // Only admins can create/edit chat rooms
+    }
+    match /chats/{chatId}/messages/{messageId} {
+        allow read: if isAdmin() || request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantUids;
+        allow create: if (isAdmin() || request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantUids)
+                      && request.resource.data.senderUid == request.auth.uid;
+        allow update, delete: if false; // Messages are immutable
+    }
+
+    // --- Internal Counters ---
+    match /counters/{counterId} {
+      allow read, write: if isAdmin(); // Only trusted server code (via admin) should modify counters
+    }
+    
+    // --- Login Activity (Write only for any authenticated user) ---
+    match /loginActivities/{activityId} {
+        allow read: if false; // No one should read the logs from the client
+        allow create: if isAuth();
+    }
+  }
+}

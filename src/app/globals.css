@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  overflow-x: hidden;
+  position: relative;
+}
+
+body {
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+@layer base {
+  :root {
+    /* Light Mode - EduSphere Connect Theme */
+    --background: 210 17% 98%; /* Light Gray #F8F9FA */
+    --foreground: 240 10% 3.9%; /* Dark Gray */
+    --card: 210 17% 98%; /* Light Gray #F8F9FA */
+    --card-foreground: 240 10% 3.9%; /* Dark Gray */
+    --popover: 210 17% 98%; /* Light Gray #F8F9FA */
+    --popover-foreground: 240 10% 3.9%; /* Dark Gray */
+    --primary: 204 70% 53%; /* Blue #3498db */
+    --primary-foreground: 0 0% 100%; /* White */
+    --secondary: 210 17% 95%; /* Slightly darker gray */
+    --secondary-foreground: 240 10% 3.9%; /* Dark Gray */
+    --muted: 210 17% 95%; /* Slightly darker gray */
+    --muted-foreground: 240 4% 46%; /* Muted Gray */
+    --accent: 145 63% 49%; /* Teal #2ecc71 */
+    --accent-foreground: 0 0% 100%; /* White */
+    --destructive: 0 84% 60%; /* Default Destructive Red */
+    --destructive-foreground: 0 0% 98%; /* Light Gray */
+    --border: 210 17% 90%; /* Gray border */
+    --input: 210 17% 90%; /* Gray input */
+    --ring: 204 70% 53%; /* Blue for focus rings */
+    --chart-1: 204 70% 53%; /* Blue */
+    --chart-2: 145 63% 49%; /* Teal */
+    --chart-3: 240 5% 65%; /* Gray */
+    --chart-4: 45 90% 55%; /* Yellow/Orange */
+    --chart-5: 300 70% 60%; /* Purple */
+    --radius: 0.5rem;
+
+    /* Sidebar Specific Variables (adjust as needed) */
+    --sidebar-background: 210 17% 98%; /* Light Gray */
+    --sidebar-foreground: 240 10% 3.9%; /* Dark Gray */
+    --sidebar-primary: 204 70% 53%; /* Blue */
+    --sidebar-primary-foreground: 0 0% 100%; /* White */
+    --sidebar-accent: 210 17% 92%; /* Lighter Gray accent for sidebar */
+    --sidebar-accent-foreground: 240 10% 3.9%; /* Dark Gray */
+    --sidebar-border: 210 17% 90%; /* Gray border */
+    --sidebar-ring: 204 70% 53%; /* Blue focus ring */
+
+    /* Role-specific avatar colors */
+    --avatar-admin-border: 45 80% 50%; /* Royale Gold */
+    --avatar-teacher-border: 145 63% 49%; /* Teal (Accent) */
+    --avatar-student-border: 204 70% 53%; /* Blue (Primary) */
+  }
+
+  .dark {
+    /* Dark Mode - EduSphere Connect Theme (Example, adjust as needed) */
+    --background: 240 10% 3.9%; /* Very Dark Gray/Black */
+    --foreground: 0 0% 98%; /* Light Gray */
+    --card: 240 10% 3.9%; /* Very Dark Gray/Black */
+    --card-foreground: 0 0% 98%; /* Light Gray */
+    --popover: 240 10% 3.9%; /* Very Dark Gray/Black */
+    --popover-foreground: 0 0% 98%; /* Light Gray */
+    --primary: 204 70% 53%; /* Blue #3498db */
+    --primary-foreground: 0 0% 100%; /* White */
+    --secondary: 240 4% 16%; /* Dark Gray */
+    --secondary-foreground: 0 0% 98%; /* Light Gray */
+    --muted: 240 4% 16%; /* Dark Gray */
+    --muted-foreground: 240 5% 65%; /* Muted Light Gray */
+    --accent: 145 63% 49%; /* Teal #2ecc71 */
+    --accent-foreground: 0 0% 100%; /* White */
+    --destructive: 0 63% 31%; /* Darker Red */
+    --destructive-foreground: 0 0% 98%; /* Light Gray */
+    --border: 240 4% 16%; /* Dark Gray Border */
+    --input: 240 4% 16%; /* Dark Gray Input */
+    --ring: 204 70% 53%; /* Blue for focus rings */
+    --chart-1: 204 70% 53%;
+    --chart-2: 145 63% 49%;
+    --chart-3: 240 5% 65%;
+    --chart-4: 45 90% 55%;
+    --chart-5: 300 70% 60%;
+
+    /* Dark Sidebar Variables */
+    --sidebar-background: 240 10% 3.9%; /* Very Dark Gray/Black */
+    --sidebar-foreground: 0 0% 98%; /* Light Gray */
+    --sidebar-primary: 204 70% 53%; /* Blue */
+    --sidebar-primary-foreground: 0 0% 100%; /* White */
+    --sidebar-accent: 240 4% 12%; /* Slightly lighter dark gray */
+    --sidebar-accent-foreground: 0 0% 98%; /* Light Gray */
+    --sidebar-border: 240 4% 16%; /* Dark Gray Border */
+    --sidebar-ring: 204 70% 53%; /* Blue focus ring */
+
+    /* Role-specific avatar colors - Dark Mode */
+    --avatar-admin-border: 45 70% 60%; /* Lighter Gold for dark mode */
+    --avatar-teacher-border: 145 55% 55%; /* Lighter Teal for dark mode */
+    --avatar-student-border: 204 60% 60%; /* Lighter Blue for dark mode */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans; /* Apply Geist Sans */
+  }
+}
+
+/* Animated Gradient Border for Student Profile Cards */
+.gradient-border-animated {
+  position: relative;
+  padding: 3px; /* Border thickness */
+  border-radius: 0.75rem; /* Matches card's rounded-lg from shadcn */
+  overflow: hidden;
+  width: 100%;
+  max-width: 500px; /* Adjust as needed for card width */
+  box-sizing: border-box;
+}
+
+.gradient-border-animated::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: -1;
+  margin: -3px; /* Negative of padding to ensure border is outside */
+  border-radius: inherit; /* Inherit from parent */
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    hsl(var(--primary)),        /* Blue */
+    hsl(var(--accent)),         /* Teal */
+    hsl(var(--chart-4)),        /* Yellow/Orange */
+    hsl(var(--destructive)),    /* Red */
+    hsl(var(--chart-5)),        /* Purple */
+    hsl(var(--primary))         /* Loop back to Blue */
+  );
+  animation: spin-gradient 4s linear infinite;
+}
+
+@keyframes spin-gradient {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Ensure inner card content has its own background */
+.gradient-border-animated > .inner-card-content {
+  background-color: hsl(var(--card));
+  border-radius: calc(0.75rem - 3px); /* Adjust based on padding to keep inner rounding */
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Role-specific avatar styles */
+.sidebar-avatar[data-role="admin"] {
+  @apply border-2 border-[hsl(var(--avatar-admin-border))];
+}
+.sidebar-avatar[data-role="teacher"] {
+  @apply border-2 border-[hsl(var(--avatar-teacher-border))];
+}
+.sidebar-avatar[data-role="student"] {
+   /* Default or a subtle primary border */
+  @apply border-2 border-[hsl(var(--avatar-student-border))];
+}

@@ -1,0 +1,49 @@
+
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+
+# Production
+/build
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local Environment Variables
+.env*.local
+.env
+
+# Log files
+*.log
+logs
+*.log.*
+
+# Firebase
+firebase-service-account-key.json # If you were to use a file path for admin SDK
+*.firebase.*
+
+# IDX specific (if any - typically handled by IDX itself)
+# .idx/
+
+# Turbopack
+.turbo
+
+# TypeScript cache
+*.tsbuildinfo
